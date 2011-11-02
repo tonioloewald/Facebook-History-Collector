@@ -265,9 +265,12 @@ function GetFBData(){
 						messageBody = comments[i].querySelector('span[data-jsid="text"]').innerHTML;
 						postDate = comments[i].querySelector('.commentActions abbr').getAttribute('data-date');
 						
-						likes = comments[i].querySelector('.comment_like_button');
-						likes = likes ? parseInt((likes.innerHTML.match(/[0-9]+\s/))[0]) : '0' ;
-						
+						try {
+							likes = comments[i].querySelector('.comment_like_button');
+							likes = likes ? parseInt((likes.innerHTML.match(/[0-9]+\s/))[0]) : '0' ;
+						} catch(e) {
+							likes = 0;
+						}
 						log( '-- Message: [' + actor + '] ' + messageBody );
 						log( '-- Date: ' + postDate );
 						log( '-- Likes: ' + likes );
