@@ -12,6 +12,7 @@ function GetFBData(){
 		/***********************
 		* configuration options
 		***********************/
+		/*
 		// we include the at to avoid matching false positives (organic references to dates in prose)
 		var stop_month = prompt('Stop searching past (Month)', 'March');
 		// /(April 25 at)|(April 24 at)(March [0-9]+ at)/;
@@ -21,6 +22,14 @@ function GetFBData(){
 		var dates = prompt('Collect dates (regular expression with three letter month abbreviations)', '(([23][0-9]) Apr 2011)|([0-9]+ May 2011)');
 		// /(26 Apr 2011)|(27 Apr 2011)|(28 Apr 2011)|(29 Apr 2011)/;
 		var date_for_collection = new RegExp( dates, 'i' );
+		*/
+		
+		var date_collect_from = prompt('Start collecting from', '4/26/2011' );
+		date_collect_from = new Date( date_collect_from );
+		
+		var date_collect_until = prompt('Stop collecting at', '5/31/2011' );
+		date_collect_until = new Date( date_collect_until );
+		
 		/***********************
 		* end of configuration options
 		***********************/
@@ -38,11 +47,22 @@ function GetFBData(){
 		var w = window.open('','Facebook Scraper','height=300,width=400');
 		w.document.write('<!doctype html><html><head><title>Facebook Scraper</title><head><body><pre>');
 		function log( msg, noNewLine ){
+				if( this.wrapWidth == undefined ){
+					this.wrapWidth = 0;
+				}
 				if( typeof(msg) == 'undefined' ){
 						msg = '';
 				}
 				if( !noNewLine ){
 						msg += '<br/>';
+						this.wrapWidth = 0;
+				} else {
+						if( this.wrapWidth + msg.length > 60 ){
+								msg = '<br/>' + msg;
+								this.wrapWidth = 0;
+						} else {
+								this.wrapWidth += msg.length;
+						}
 				}
 				w.document.write( msg );
 				w.scrollTo(0,1000000);
@@ -105,6 +125,23 @@ function GetFBData(){
 				window.scrollTo(0,1000000);
 				
 				// continue until the date is far enough back
+				var lastDate = document.body.querySelectorAll('.fbProfileStream .uiStreamSource abbr');
+				if( lastDate.length > 0 ){
+					var d = lastDate[ lastDate.length - 1 ];
+					d = d.getAttribute('data-utime');
+					d = parseInt(d);
+					d = new Date( d * 1000 );
+					console.log( d + ',' + date_collect_from );
+					if( d < date_collect_from ){
+						log();
+						CollectData();
+						return;
+					}
+				}
+				
+				setTimeout(LoadOlderPosts,1000);
+				
+				/*
 				if( document.body.innerHTML.search( date_stop_searching ) == -1 ){
 						setTimeout(LoadOlderPosts,1000);
 				} else {
@@ -112,6 +149,7 @@ function GetFBData(){
 						log();
 						CollectData();
 				}
+				*/
 		}
 		
 		function CollectData(){
@@ -126,8 +164,16 @@ function GetFBData(){
 			for( var i in list ){
 				if( list[i].querySelector ){
 					var src = list[i].querySelector('.uiStreamSource abbr');
-					if( src && src.getAttribute( 'data-date' ).search( date_for_collection ) != -1 ){
-						expandQueue.push( list[i] );
+					/*
+						changed to data-utime which is Unix timestamp (milliseconds) / 1000
+						convert to date via d = new Date( utime * 1000 );
+					*/
+					if( src ){ // && src.getAttribute( 'data-utime' ).search( date_for_collection ) != -1 ){
+						var d = parseInt( src.getAttribute( 'data-utime' ) );
+						d = new Date( d * 1000 );
+						if( d >= date_collect_from && d <= date_collect_until ){
+							expandQueue.push( list[i] );
+						}
 					}
 				}
 			}
